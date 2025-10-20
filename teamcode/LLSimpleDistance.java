@@ -10,7 +10,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Scanner;
 
-@TeleOp(name = "Limelight Mesafe Ölçümü (Kalıcı Kalibrasyon)", group = "Test")
+@TeleOp(name = "Limelight Distance Test (Persistent Calibration)", group = "Test")
 public class LLSimpleDistance extends OpMode {
 
     private Limelight3A limelight;
@@ -19,7 +19,7 @@ public class LLSimpleDistance extends OpMode {
     private double[] taBuffer = new double[5];
     private int index = 0;
 
-    // Kalibrasyon dosya yolu (Control Hub'ta dahili depolama)
+    // Calibration file path (stored in Control Hub internal memory)
     private static final String K_FILE_PATH = "/sdcard/FIRST/k_value.txt";
 
     @Override
@@ -27,13 +27,13 @@ public class LLSimpleDistance extends OpMode {
         limelight = hardwareMap.get(Limelight3A.class, "limelight");
         limelight.pipelineSwitch(0);
 
-        // Önce kayıtlı k değeri varsa oku
+        // Load saved calibration value if available
         k = loadK();
 
         if (k > 0) {
-            telemetry.addData("Kayıtlı k değeri yüklendi:", k);
+            telemetry.addData("Loaded calibration constant (k):", k);
         } else {
-            telemetry.addLine("Kalibrasyon yok. Robotu bilinen mesafeye koyup A'ya bas.");
+            telemetry.addLine("No calibration found. Place the robot at a known distance and press A.");
         }
         telemetry.update();
     }
@@ -50,7 +50,7 @@ public class LLSimpleDistance extends OpMode {
         if (result != null && result.isValid()) {
             double ta = result.getTa();
 
-            // Gürültüyü azaltmak için ortalama
+            // Noise reduction using moving average
             taBuffer[index % taBuffer.length] = ta;
             index++;
             double avgTa = 0;
@@ -59,50 +59,55 @@ public class LLSimpleDistance extends OpMode {
 
             distance = getDistance(avgTa);
 
-            // 🔹 Kalibrasyon tuşu (örnek: 50 cm'deyken)
+            // 🔹 Calibration key (example: when the robot is 50 cm away)
+            if (gamepad1.a) { // Press A to calibrate
+                double knownDistance = 50.0; // known distance in cm
+                calibrateAndSave(knownDistance, avgTa);
+                telemetry.addLine("✅ Calibration completed!");
+            }
 
             telemetry.addData("Target Area (ta)", "%.4f", avgTa);
-            telemetry.addData("Mesafe (cm)", "%.1f", distance);
-            telemetry.addData("k Sabiti", "%.2f", k);
+            telemetry.addData("Distance (cm)", "%.1f", distance);
+            telemetry.addData("Calibration Constant (k)", "%.2f", k);
         } else {
-            telemetry.addLine("AprilTag algılanamadı!");
+            telemetry.addLine("No AprilTag detected!");
         }
 
         telemetry.update();
     }
 
-    /** Mesafe hesaplama formülü */
+    /** Distance calculation formula */
     private double getDistance(double ta) {
         if (ta <= 0) return 0;
-        if (k <= 0) k = 350.0; // yedek varsayılan
+        if (k <= 0) k = 350.0; // fallback default
         return k / Math.sqrt(ta);
     }
 
-    /** Kalibrasyon yap ve k'yı dosyaya kaydet */
+    /** Perform calibration and save k to file */
     private void calibrateAndSave(double knownDistanceCm, double ta) {
         if (ta > 0) {
             k = knownDistanceCm * Math.sqrt(ta);
             saveK(k);
-            telemetry.addData("Kalibrasyon tamamlandı! k =", k);
+            telemetry.addData("Calibration completed! k =", k);
         } else {
-            telemetry.addLine("Kalibrasyon başarısız: ta geçersiz.");
+            telemetry.addLine("Calibration failed: invalid ta value.");
         }
     }
 
-    /** k değerini dosyaya kaydet */
+    /** Save k value to file */
     private void saveK(double value) {
         try {
             File file = new File(K_FILE_PATH);
-            file.getParentFile().mkdirs(); // klasör yoksa oluştur
+            file.getParentFile().mkdirs(); // create folder if missing
             FileWriter writer = new FileWriter(file);
             writer.write(String.valueOf(value));
             writer.close();
         } catch (IOException e) {
-            telemetry.addLine("k değeri kaydedilemedi: " + e.getMessage());
+            telemetry.addLine("Failed to save k value: " + e.getMessage());
         }
     }
 
-    /** k değerini dosyadan yükle */
+    /** Load k value from file */
     private double loadK() {
         try {
             File file = new File(K_FILE_PATH);
@@ -116,8 +121,9 @@ public class LLSimpleDistance extends OpMode {
                 scanner.close();
             }
         } catch (Exception e) {
-            telemetry.addLine("k değeri yüklenemedi: " + e.getMessage());
+            telemetry.addLine("Failed to load k value: " + e.getMessage());
         }
         return -1;
     }
 }
+

@@ -1,7 +1,6 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.hardware.bosch.BHI260IMU;
-import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.IMU;
 
@@ -10,37 +9,45 @@ import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 
 /**
- * TestBench — Brogan M. Pratt tarzında
- * IMU ve sensör testleri için merkezi bir sınıf
+ * TestBench — Inspired by Brogan M. Pratt style
+ * A central class for IMU and sensor testing.
  */
 public class TestBench {
 
     private BHI260IMU imu;
 
-    // TestBench'i başlat (IMU'yu initialize et)
+    /**
+     * Initializes the TestBench (sets up the IMU).
+     * @param hardwareMap FTC hardware map
+     */
     public void init(HardwareMap hardwareMap) {
-        imu = hardwareMap.get(BHI260IMU.class, "imu"); // imu adı robotun config'ine göre değişebilir
+        imu = hardwareMap.get(BHI260IMU.class, "imu"); // IMU name may vary based on robot configuration
 
-        // IMU parametreleri (Rev Hub orientation)
+        // IMU parameters (Rev Hub orientation setup)
         IMU.Parameters parameters = new IMU.Parameters(
                 new RevHubOrientationOnRobot(
                         RevHubOrientationOnRobot.LogoFacingDirection.UP,
                         RevHubOrientationOnRobot.UsbFacingDirection.FORWARD
                 )
         );
+
         imu.initialize(parameters);
     }
 
-    // IMU'dan yaw, pitch, roll açılarını döndür
-    public YawPitchRollAngles getOriantation() {
-        // IMU'dan yön (Yaw, Pitch, Roll) açılarını alın.
-        // Yaw, genellikle z-ekseni etrafındaki dönüşü (başlık) temsil eder.
+    /**
+     * Returns the full orientation (Yaw, Pitch, Roll) from the IMU.
+     * Yaw usually represents rotation around the Z-axis (heading).
+     */
+    public YawPitchRollAngles getOrientation() {
         return imu.getRobotYawPitchRollAngles();
     }
 
+    /**
+     * Returns the current Yaw angle in degrees.
+     * (You can switch to radians if needed.)
+     */
     public double getYaw() {
-        // Yaw açısını derece cinsinden alın (veya ihtiyaca göre RADIAN seçin)
-        return getOriantation().getYaw(AngleUnit.DEGREES);
+        return getOrientation().getYaw(AngleUnit.DEGREES);
     }
-
 }
+
