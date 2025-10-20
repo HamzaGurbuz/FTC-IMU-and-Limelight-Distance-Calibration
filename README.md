@@ -115,7 +115,7 @@ TeamCode/
 
 ## 🧑‍💻 Author
 **Necmettin Hamza Gürbüz**  
-FTC Robotics Developer & Control System Engineer  
+FTC Robotics Developer & Highschool student 
 
 ---
 
